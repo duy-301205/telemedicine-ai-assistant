@@ -5,8 +5,6 @@ import {
   Check, 
   ExternalLink, 
   Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
   User,
   ChevronDown
 } from 'lucide-react';
@@ -20,8 +18,6 @@ interface NavbarProps {
   currentRole: string;
   onRoleChange: (role: string) => void;
   onToggleMobileSidebar: () => void;
-  onToggleDesktopSidebar: () => void;
-  isSidebarCollapsed: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ 
@@ -30,9 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigate,
   currentRole,
   onRoleChange,
-  onToggleMobileSidebar,
-  onToggleDesktopSidebar,
-  isSidebarCollapsed
+  onToggleMobileSidebar
 }) => {
   const [copied, setCopied] = useState(false);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
@@ -83,10 +77,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   const pageMeta = getPageTitle(activeTab);
 
   return (
-    <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 shadow-xs transition-colors">
+    <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 shadow-xs transition-colors shrink-0">
       <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
-        {/* Left Side: Sidebar Toggle & Page Title */}
+        {/* Left Side: Mobile Sidebar Toggle & Page Title */}
         <div className="flex items-center gap-3">
           {/* Mobile Menu Button */}
           <button
@@ -97,25 +91,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Desktop Sidebar Toggle Button */}
-          <button
-            onClick={onToggleDesktopSidebar}
-            className="hidden lg:flex items-center gap-1.5 p-2 rounded-xl text-slate-600 hover:bg-slate-100 border border-slate-200/90 transition-colors shadow-xs"
-            title={isSidebarCollapsed ? 'Mở rộng thanh sidebar' : 'Thu gọn thanh sidebar'}
-          >
-            {isSidebarCollapsed ? (
-              <PanelLeftOpen className="w-4 h-4 text-sky-600" />
-            ) : (
-              <PanelLeftClose className="w-4 h-4 text-slate-500" />
-            )}
-          </button>
-
           {/* Page Title & Breadcrumb */}
-          <div className="hidden sm:block">
+          <div>
             <h1 className="font-bold text-sm sm:text-base text-slate-900 leading-tight">
               {pageMeta.title}
             </h1>
-            <p className="text-[11px] text-slate-400 font-normal">
+            <p className="text-[11px] text-slate-400 font-normal hidden sm:block">
               {pageMeta.sub}
             </p>
           </div>

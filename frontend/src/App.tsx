@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { DisclaimerBanner } from './components/DisclaimerBanner';
 import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { DashboardPage } from './pages/DashboardPage';
@@ -31,7 +30,11 @@ export const App: React.FC = () => {
   const handleNavigate = (route: string) => {
     setCurrentRoute(route);
     setIsMobileSidebarOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Smooth scroll to top of content container
+    const contentEl = document.getElementById('main-content-viewport');
+    if (contentEl) {
+      contentEl.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const renderContent = () => {
@@ -80,38 +83,34 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/60 flex flex-col text-slate-900 font-sans selection:bg-sky-100 selection:text-sky-900">
-      {/* 1. Global Persistent Medical Disclaimer Banner */}
-      <DisclaimerBanner />
+    <div className="h-screen w-screen overflow-hidden bg-slate-50/60 flex text-slate-900 font-sans selection:bg-sky-100 selection:text-sky-900">
+      {/* 1. Left Sidebar (Fixed on left, never scrolls when page content scrolls) */}
+      <Sidebar
+        isOpen={isMobileSidebarOpen}
+        isCollapsed={isDesktopSidebarCollapsed}
+        onToggleCollapse={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        activeTab={currentRoute}
+        onNavigate={handleNavigate}
+        currentRole={currentRole}
+        onRoleChange={setCurrentRole}
+      />
 
-      {/* 2. Main Flex Container: Left Collapsible Sidebar + Right Workstation */}
-      <div className="flex flex-1 min-h-[calc(100vh-40px)]">
-        {/* Left Sidebar (Toggleable & Collapsible) */}
-        <Sidebar
-          isOpen={isMobileSidebarOpen}
-          isCollapsed={isDesktopSidebarCollapsed}
-          onToggleCollapse={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
-          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+      {/* 2. Right Workstation Container: Fixed Header Navbar + Independently Scrollable Main Viewport */}
+      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden">
+        {/* Fixed Top Header (Never scrolls away) */}
+        <Navbar
+          config={demoConfig}
           activeTab={currentRoute}
           onNavigate={handleNavigate}
           currentRole={currentRole}
           onRoleChange={setCurrentRole}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
         />
 
-        {/* Right Workstation: Header Navbar + Dynamic Page Content + Footer */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <Navbar
-            config={demoConfig}
-            activeTab={currentRoute}
-            onNavigate={handleNavigate}
-            currentRole={currentRole}
-            onRoleChange={setCurrentRole}
-            onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-            onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
-            isSidebarCollapsed={isDesktopSidebarCollapsed}
-          />
-
-          <main className="flex-1 w-full max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        {/* Scrollable Main Content Viewport (Only this area scrolls) */}
+        <div id="main-content-viewport" className="flex-1 overflow-y-auto">
+          <main className="w-full max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             {renderContent()}
           </main>
 

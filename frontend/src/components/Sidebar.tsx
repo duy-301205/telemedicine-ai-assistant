@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Main Sidebar Element */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 h-screen z-50 bg-white border-r border-slate-200/90 flex flex-col justify-between transition-all duration-300 ease-in-out shadow-xs select-none ${sidebarWidthClass} ${
+        className={`fixed lg:static top-0 left-0 h-screen z-40 bg-white border-r border-slate-200/90 flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out shadow-xs select-none ${sidebarWidthClass} ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
