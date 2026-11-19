@@ -56,8 +56,8 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col text-slate-900">
-      {/* 1. Global Persistent Medical Disclaimer */}
+    <div className="min-h-screen bg-slate-50/60 flex flex-col text-slate-900 font-sans selection:bg-sky-100 selection:text-sky-900">
+      {/* 1. Global Persistent Medical Disclaimer Banner */}
       <DisclaimerBanner />
 
       {/* 2. Top Navigation Bar */}
@@ -67,25 +67,25 @@ export const App: React.FC = () => {
         onNavigate={handleNavigate}
       />
 
-      {/* 3. Main Content Viewport */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      {/* 3. Main Wide Content Viewport */}
+      <main className="flex-1 w-full max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
         {renderContent()}
       </main>
 
-      {/* 4. Footer */}
-      <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 text-xs py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-center sm:text-left">
-            <p className="font-semibold text-slate-200">
+      {/* 4. Harmonious Clean Footer */}
+      <footer className="bg-white border-t border-slate-200/80 text-slate-500 text-xs py-4 sm:py-5 mt-auto">
+        <div className="w-full max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+          <div>
+            <p className="font-bold text-slate-800">
               Đề tài KLTN: Trợ lý AI hỗ trợ chuẩn bị hội chẩn Telemedicine
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
               Sinh viên thực hiện: Hoàng Mạnh Duy (K68A3) &bull; Prototype Web Demo (Idempotent SQLite DB)
             </p>
           </div>
-          <div className="text-center sm:text-right text-[11px] text-slate-400">
-            <p>CHẾ ĐỘ MÔ PHỎNG KỸ THUẬT &bull; MOCK DATA FIXTURES</p>
-            <p className="text-amber-500 font-medium">Không sử dụng trực tiếp cho chẩn đoán hoặc kê đơn y tế</p>
+          <div className="text-center sm:text-right text-[11px] text-slate-500">
+            <p className="font-semibold text-slate-600">CHẾ ĐỘ MÔ PHỎNG KỸ THUẬT &bull; MOCK DATA FIXTURES</p>
+            <p className="text-amber-700 font-medium mt-0.5">Không sử dụng trực tiếp cho chẩn đoán hoặc kê đơn y tế</p>
           </div>
         </div>
       </footer>

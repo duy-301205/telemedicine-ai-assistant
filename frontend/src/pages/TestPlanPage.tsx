@@ -25,7 +25,7 @@ export const TestPlanPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 py-4">
+    <div className="w-full space-y-6 py-2">
       {/* Header */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-3">

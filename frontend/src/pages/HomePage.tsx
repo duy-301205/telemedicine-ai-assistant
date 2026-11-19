@@ -3,12 +3,12 @@ import {
   Activity, 
   ArrowRight, 
   FileText, 
-  Layers, 
   CheckCircle2, 
   ShieldAlert, 
-  Database, 
-  GitBranch, 
-  ExternalLink 
+  Search,
+  Sparkles,
+  Layers,
+  History
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -17,13 +17,13 @@ interface HomePageProps {
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   return (
-    <div className="max-w-6xl mx-auto space-y-10 py-4">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 text-white rounded-3xl p-8 sm:p-12 shadow-xl border border-slate-700/50 relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="w-full space-y-8 py-2">
+      {/* Modern Clinical Hero Banner */}
+      <div className="bg-gradient-to-r from-sky-900 via-slate-900 to-teal-950 text-white rounded-3xl p-8 sm:p-12 shadow-sm border border-slate-700/50 relative overflow-hidden">
+        <div className="absolute right-0 top-0 bottom-0 w-2/5 bg-gradient-to-l from-sky-500/10 to-transparent pointer-events-none"></div>
 
-        <div className="max-w-3xl space-y-5 relative z-10">
-          <div className="inline-flex items-center gap-2 bg-sky-500/20 text-sky-300 border border-sky-400/30 px-3 py-1 rounded-full text-xs font-semibold">
+        <div className="max-w-4xl space-y-4 relative z-10">
+          <div className="inline-flex items-center gap-2 bg-sky-500/20 text-sky-300 border border-sky-400/30 px-3.5 py-1 rounded-full text-xs font-semibold">
             <Activity className="w-3.5 h-3.5 text-sky-400" />
             Đề tài KLTN: Trợ lý AI hỗ trợ chuẩn bị hội chẩn Telemedicine
           </div>
@@ -32,14 +32,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             Hệ Thống Trợ Lý AI Chuẩn Bị Hội Chẩn Y Tế Từ Xa
           </h1>
 
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+          <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-3xl">
             Nguyên mẫu (Prototype) minh họa luồng thao tác khép kín: trích xuất hồ sơ bệnh án dẫn nguồn PDF, đối chiếu ảnh X-quang ngực thẳng với 3 dấu hiệu nghi ngờ, sinh bản thảo báo cáo, hỗ trợ bác sĩ chỉnh sửa và phê duyệt lưu phiên bản bất biến.
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               onClick={() => onNavigate('/cases/DEMO-001')}
-              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-lg shadow-sky-600/30 transition-all hover:scale-[1.02]"
+              className="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-sm transition-all hover:scale-[1.02]"
             >
               <span>Vào Ca Mẫu DEMO-001</span>
               <ArrowRight className="w-4 h-4" />
@@ -47,7 +47,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
             <button
               onClick={() => onNavigate('/demo')}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm px-5 py-3 rounded-xl border border-slate-700 transition-colors"
+              className="flex items-center gap-2 bg-slate-800/90 hover:bg-slate-700 text-slate-200 font-semibold text-sm px-5 py-3 rounded-xl border border-slate-700 transition-colors"
             >
               <FileText className="w-4 h-4 text-slate-400" />
               <span>Xem danh sách 4 ca giả lập</span>
@@ -56,28 +56,28 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Feature Highlights (The 4 core steps requested by teacher) */}
+      {/* Feature Highlights: 4 Cards Wide */}
       <div>
-        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 text-sky-600" />
-          Quy trình hội chẩn 4 bước đã được hiện thực hóa
+          <span>Quy trình hội chẩn 4 bước khép kín</span>
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Step 1 */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-sm">
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs hover:border-sky-300 transition-all space-y-2.5">
+            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-700 border border-sky-100 flex items-center justify-center font-bold text-sm">
               01
             </div>
             <h3 className="font-bold text-slate-900 text-sm">Trích Xuất Có Dẫn Nguồn</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Trích xuất 5 trường thông tin. Bấm vào trường tự động mở đúng trang PDF và hiển thị câu trích dẫn gốc. Phân biệt rõ &quot;Chưa có dữ liệu&quot; và &quot;Phủ định có căn cứ&quot;.
+              Trích xuất 5 nhóm trường. Bấm vào trường tự động mở đúng trang PDF và làm nổi bật câu trích dẫn gốc. Phân biệt rõ &quot;Chưa có dữ liệu&quot; và &quot;Phủ định có căn cứ&quot;.
             </p>
           </div>
 
           {/* Step 2 */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs hover:border-sky-300 transition-all space-y-2.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-800 border border-amber-100 flex items-center justify-center font-bold text-sm">
               02
             </div>
             <h3 className="font-bold text-slate-900 text-sm">3 Điểm Số X-quang MOCK</h3>
@@ -87,8 +87,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           </div>
 
           {/* Step 3 */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs hover:border-sky-300 transition-all space-y-2.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-center font-bold text-sm">
               03
             </div>
             <h3 className="font-bold text-slate-900 text-sm">Bác Sĩ Chỉnh Sửa & Duyệt</h3>
@@ -98,8 +98,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           </div>
 
           {/* Step 4 */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm">
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs hover:border-sky-300 transition-all space-y-2.5">
+            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-800 border border-purple-100 flex items-center justify-center font-bold text-sm">
               04
             </div>
             <h3 className="font-bold text-slate-900 text-sm">Lưu Bất Biến & So Sánh</h3>
@@ -110,11 +110,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Safety Notice Card */}
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-amber-950 flex flex-col sm:flex-row items-start gap-4">
-        <ShieldAlert className="w-8 h-8 text-amber-600 flex-shrink-0 mt-1" />
-        <div className="space-y-1.5 text-xs sm:text-sm">
-          <h4 className="font-bold text-amber-900">Cam kết an toàn y tế và liêm chính học thuật</h4>
+      {/* Safety Notice */}
+      <div className="bg-amber-50/70 border border-amber-200/90 rounded-2xl p-5 text-amber-950 flex flex-col sm:flex-row items-start gap-3.5 shadow-xs">
+        <ShieldAlert className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="space-y-1 text-xs">
+          <h4 className="font-bold text-amber-950">Cam kết an toàn y tế và liêm chính học thuật</h4>
           <p className="text-slate-700 leading-relaxed">
             Hệ thống là bản thử nghiệm kỹ thuật phục vụ báo cáo tiến độ. Toàn bộ hồ sơ bệnh án, ảnh X-quang và điểm số là dữ liệu giả lập (Mock fixtures). Không khẳng định đạt KPI F1 hay AUROC khi chưa huấn luyện và kiểm thử độc lập.
           </p>

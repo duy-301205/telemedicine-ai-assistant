@@ -3,7 +3,7 @@ import { Info, ShieldAlert, CheckCircle2, AlertCircle, ArrowUpRight, Cpu, User }
 
 export const AboutPage: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-4">
+    <div className="w-full max-w-5xl mx-auto space-y-6 py-2">
       {/* Title & Author */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-4">
         <div className="flex items-center gap-2 text-xs font-semibold text-sky-700 bg-sky-50 px-2.5 py-1 rounded-md w-fit">

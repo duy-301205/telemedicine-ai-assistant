@@ -4,11 +4,12 @@ import {
   Image as ImageIcon, 
   ClipboardList, 
   History, 
-  AlertTriangle, 
   ArrowLeft, 
   ShieldAlert, 
   CheckCircle,
-  FileWarning
+  FileWarning,
+  User,
+  Activity
 } from 'lucide-react';
 import { 
   CaseDetail, 
@@ -83,7 +84,6 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack }
         const repList = await api.listReports(caseId);
         setReports(repList);
         if (repList.length > 0) {
-          // Set to latest version
           setCurrentReport(repList[repList.length - 1]);
         }
       } catch {
@@ -137,7 +137,6 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack }
         message: `Đã lưu bản chỉnh sửa Version ${newVersion.version_number} thành công!`,
       });
 
-      // Reload logs and detail to update status
       const logs = await api.getAuditLogs(caseId);
       setAuditLogs(logs);
       const detail = await api.getCaseDetail(caseId);
@@ -167,7 +166,6 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack }
         message: `Đã phê duyệt báo cáo thành công (Version ${approvedVer.version_number})!`,
       });
 
-      // Reload
       const logs = await api.getAuditLogs(caseId);
       setAuditLogs(logs);
       const detail = await api.getCaseDetail(caseId);
@@ -191,21 +189,50 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack }
 
   if (!caseDetail) {
     return (
-      <div className="p-8 text-center text-red-600 bg-red-50 rounded-xl border border-red-200">
+      <div className="p-8 text-center text-red-600 bg-red-50 rounded-2xl border border-red-200">
         Không tìm thấy thông tin ca bệnh: {caseId}
       </div>
     );
   }
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'AI_DRAFT':
+        return (
+          <span className="bg-sky-50 text-sky-700 text-xs font-bold px-2.5 py-1 rounded-full border border-sky-200">
+            AI DRAFT
+          </span>
+        );
+      case 'DOCTOR_EDITED':
+        return (
+          <span className="bg-amber-50 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full border border-amber-300">
+            DOCTOR EDITED
+          </span>
+        );
+      case 'DOCTOR_APPROVED':
+        return (
+          <span className="bg-emerald-50 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-300">
+            DOCTOR APPROVED
+          </span>
+        );
+      default:
+        return (
+          <span className="bg-slate-100 text-slate-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+            {status}
+          </span>
+        );
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Toast Notification */}
       {notification && (
         <div
-          className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between shadow-sm transition-all ${
+          className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between shadow-xs transition-all ${
             notification.type === 'success'
-              ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-              : 'bg-red-50 border-red-300 text-red-900'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+              : 'bg-rose-50 border-rose-200 text-rose-900'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -222,56 +249,53 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack }
       )}
 
       {/* Case Header Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+              className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 transition-colors shadow-xs"
               title="Quay lại danh sách ca"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-lg font-extrabold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="font-mono text-base font-extrabold text-sky-800 bg-sky-50 px-2.5 py-0.5 rounded-lg border border-sky-200/80">
                   {caseDetail.id}
                 </span>
-                <span className="text-sm font-semibold text-slate-700">
+                <span className="text-base font-bold text-slate-900">
                   {caseDetail.patient_name_demo}
                 </span>
                 {caseDetail.age && (
-                  <span className="text-xs text-slate-400 font-medium">
+                  <span className="text-xs text-slate-500 font-medium">
                     ({caseDetail.age} tuổi &bull; {caseDetail.gender})
                   </span>
                 )}
+                {getStatusBadge(caseDetail.status)}
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Chế độ: <strong>DỮ LIỆU MÔ PHỎNG (MOCK)</strong> &bull; Trạng thái ca:{' '}
-                <span className="font-bold text-sky-700">{caseDetail.status}</span>
+              <p className="text-xs text-slate-500 mt-1 flex items-center gap-2">
+                <span>Chế độ: <strong className="text-slate-700">DỮ LIỆU MÔ PHỎNG (MOCK)</strong></span>
+                <span>&bull;</span>
+                <span>Số phiên bản báo cáo: <strong className="text-slate-700">{caseDetail.report_versions_count}</strong></span>
               </p>
             </div>
           </div>
 
-          {/* Quick status & reports count badge */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold bg-sky-50 text-sky-800 px-3 py-1 rounded-full border border-sky-200">
-              {caseDetail.report_versions_count} phiên bản báo cáo
-            </span>
-            {caseDetail.error_type && (
-              <span className="text-xs font-bold bg-amber-100 text-amber-900 px-3 py-1 rounded-full border border-amber-300 flex items-center gap-1">
-                <FileWarning className="w-3.5 h-3.5 text-amber-700" />
-                {caseDetail.error_type}
-              </span>
-            )}
-          </div>
+          {/* Error Tag if any */}
+          {caseDetail.error_type && (
+            <div className="flex items-center gap-1.5 text-xs font-bold bg-amber-50 text-amber-900 px-3 py-1.5 rounded-xl border border-amber-300">
+              <FileWarning className="w-4 h-4 text-amber-700" />
+              <span>Tình huống lỗi: {caseDetail.error_type}</span>
+            </div>
+          )}
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 mt-6 -mb-4 overflow-x-auto gap-2">
+        <div className="flex border-b border-slate-200/80 mt-5 -mb-3 overflow-x-auto gap-2">
           <button
             onClick={() => setActiveTab('documents')}
-            className={`pb-3 px-4 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
               activeTab === 'documents'
                 ? 'border-sky-600 text-sky-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -283,7 +307,7 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack }
 
           <button
             onClick={() => setActiveTab('xray')}
-            className={`pb-3 px-4 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
               activeTab === 'xray'
                 ? 'border-sky-600 text-sky-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -295,7 +319,7 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack }
 
           <button
             onClick={() => setActiveTab('report')}
-            className={`pb-3 px-4 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
               activeTab === 'report'
                 ? 'border-sky-600 text-sky-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -307,7 +331,7 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack }
 
           <button
             onClick={() => setActiveTab('history')}
-            className={`pb-3 px-4 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
               activeTab === 'history'
                 ? 'border-sky-600 text-sky-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -319,75 +343,84 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack }
         </div>
       </div>
 
-      {/* TAB 1: Documents & Citations */}
-      {activeTab === 'documents' && (
-        <div>
-          {extractionError ? (
-            <div className="bg-amber-50 border border-amber-300 rounded-xl p-8 text-center max-w-xl mx-auto shadow-sm">
-              <ShieldAlert className="w-12 h-12 text-amber-600 mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-amber-900 mb-1">Không thể trích xuất hồ sơ</h3>
-              <p className="text-sm text-amber-800 mb-4">{extractionError}</p>
-              <div className="text-xs bg-white p-3 rounded border border-amber-200 text-slate-600 text-left">
-                <strong>Nguyên tắc y khoa an toàn:</strong> Khi hồ sơ thiếu trang hoặc không đủ điều kiện trích xuất, hệ thống từ chối xử lý và không dùng mô hình để suy đoán nội dung bị thiếu.
+      {/* Main Workspace Workstation */}
+      <div className="w-full">
+        {/* TAB 1: Documents & Citations */}
+        {activeTab === 'documents' && (
+          <div>
+            {extractionError ? (
+              <div className="bg-amber-50/80 border border-amber-300 rounded-2xl p-8 text-center max-w-xl mx-auto shadow-xs">
+                <ShieldAlert className="w-12 h-12 text-amber-600 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-amber-950 mb-1">Không thể trích xuất hồ sơ</h3>
+                <p className="text-sm text-amber-800 mb-4">{extractionError}</p>
+                <div className="text-xs bg-white p-3.5 rounded-xl border border-amber-200 text-slate-600 text-left leading-relaxed">
+                  <strong>Nguyên tắc y khoa an toàn:</strong> Khi hồ sơ thiếu trang hoặc không đủ điều kiện trích xuất, hệ thống từ chối xử lý và không dùng mô hình để suy đoán nội dung bị thiếu.
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[720px]">
-              {/* Left Column: PDF Viewer */}
-              <div className="lg:col-span-7 h-full">
-                <PdfViewer
-                  caseId={caseId}
-                  activePage={activePdfPage}
-                  onPageChange={setActivePdfPage}
-                  selectedSource={selectedSource}
-                />
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 h-[calc(100vh-230px)] min-h-[600px] max-h-[850px]">
+                {/* Left Column: PDF Viewer */}
+                <div className="lg:col-span-7 h-full overflow-hidden">
+                  <PdfViewer
+                    caseId={caseId}
+                    activePage={activePdfPage}
+                    onPageChange={setActivePdfPage}
+                    selectedSource={selectedSource}
+                  />
+                </div>
+
+                {/* Right Column: Extraction Panel */}
+                <div className="lg:col-span-5 h-full overflow-hidden">
+                  <ExtractionPanel
+                    extraction={extraction}
+                    selectedFieldKey={selectedFieldKey}
+                    onSelectField={handleSelectField}
+                  />
+                </div>
               </div>
+            )}
+          </div>
+        )}
 
-              {/* Right Column: Extraction Panel */}
-              <div className="lg:col-span-5 h-full">
-                <ExtractionPanel
-                  extraction={extraction}
-                  selectedFieldKey={selectedFieldKey}
-                  onSelectField={handleSelectField}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        {/* TAB 2: X-Ray Analysis */}
+        {activeTab === 'xray' && (
+          <div className="w-full">
+            <XrayPanel
+              caseId={caseId}
+              prediction={prediction}
+              error={predictionError}
+            />
+          </div>
+        )}
 
-      {/* TAB 2: X-Ray Analysis */}
-      {activeTab === 'xray' && (
-        <XrayPanel
-          caseId={caseId}
-          prediction={prediction}
-          error={predictionError}
-        />
-      )}
+        {/* TAB 3: Report Editor */}
+        {activeTab === 'report' && (
+          <div className="w-full">
+            <ReportEditor
+              caseId={caseId}
+              currentReport={currentReport}
+              onSaveEdit={handleSaveEdit}
+              onApprove={handleApprove}
+              isSaving={isSaving}
+            />
+          </div>
+        )}
 
-      {/* TAB 3: Report Editor */}
-      {activeTab === 'report' && (
-        <ReportEditor
-          caseId={caseId}
-          currentReport={currentReport}
-          onSaveEdit={handleSaveEdit}
-          onApprove={handleApprove}
-          isSaving={isSaving}
-        />
-      )}
-
-      {/* TAB 4: Version History */}
-      {activeTab === 'history' && (
-        <VersionHistory
-          reports={reports}
-          auditLogs={auditLogs}
-          currentVersionId={currentReport?.id || ''}
-          onSelectVersion={(ver) => {
-            setCurrentReport(ver);
-            setActiveTab('report');
-          }}
-        />
-      )}
+        {/* TAB 4: Version History */}
+        {activeTab === 'history' && (
+          <div className="w-full">
+            <VersionHistory
+              reports={reports}
+              auditLogs={auditLogs}
+              currentVersionId={currentReport?.id || ''}
+              onSelectVersion={(ver) => {
+                setCurrentReport(ver);
+                setActiveTab('report');
+              }}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

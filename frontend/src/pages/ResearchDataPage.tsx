@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { ResearchDataPlan } from '../types';
 import { api } from '../api/client';
 import { DataSplitTable } from '../components/DataSplitTable';
@@ -32,8 +32,8 @@ export const ResearchDataPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6 bg-red-50 border border-red-200 rounded-xl text-center text-red-800 max-w-lg mx-auto">
-        <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-500" />
+      <div className="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-center text-rose-800 max-w-lg mx-auto">
+        <AlertCircle className="w-8 h-8 mx-auto mb-2 text-rose-500" />
         <h4 className="font-bold">Không thể tải kế hoạch dữ liệu</h4>
         <p className="text-xs mt-1">{error}</p>
       </div>
@@ -41,7 +41,7 @@ export const ResearchDataPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 py-4">
+    <div className="w-full space-y-6 py-2">
       <DataSplitTable dataPlan={dataPlan} />
     </div>
   );
