@@ -124,6 +124,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload || {})
     }),
+  attachSampleData: (caseId: string) =>
+    fetchJson<any>(`/cases/${caseId}/attach-sample-data`, {
+      method: 'POST'
+    }),
   getExtraction: (caseId: string) => fetchJson<ExtractionData>(`/cases/${caseId}/extraction`),
   getPredictions: (caseId: string) => fetchJson<PredictionData>(`/cases/${caseId}/predictions`),
   manualExtraction: (caseId: string, fields: any) =>
@@ -140,6 +144,10 @@ export const api = {
   // Reports
   listReports: (caseId: string) => fetchJson<ReportVersion[]>(`/cases/${caseId}/reports`),
   getReport: (caseId: string, versionId: string) => fetchJson<ReportVersion>(`/cases/${caseId}/reports/${versionId}`),
+  generateInitialReport: (caseId: string, actorLabel?: string) =>
+    fetchJson<ReportVersion>(`/cases/${caseId}/reports/generate-initial${actorLabel ? `?actor_label=${encodeURIComponent(actorLabel)}` : ''}`, {
+      method: 'POST'
+    }),
   saveDraftEdit: (caseId: string, data: {
     parent_version_id: string;
     actor_label: string;

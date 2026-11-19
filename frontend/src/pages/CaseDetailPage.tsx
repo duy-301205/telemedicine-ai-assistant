@@ -163,11 +163,10 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack, 
     actorLabel: string,
     changeSummary: string
   ) => {
-    if (!currentReport) return;
     try {
       setIsSaving(true);
       const newVersion = await api.saveDraftEdit(caseId, {
-        parent_version_id: currentReport.id,
+        parent_version_id: currentReport ? currentReport.id : 'INITIAL',
         actor_label: actorLabel,
         content,
         change_summary: changeSummary,
@@ -177,7 +176,7 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack, 
       setCurrentReport(newVersion);
       setNotification({
         type: 'success',
-        message: `Đã lưu bản chỉnh sửa Version ${newVersion.version_number} thành công!`,
+        message: `Đã lưu bản báo cáo Version ${newVersion.version_number} thành công!`,
       });
 
       const logs = await api.getAuditLogs(caseId);
@@ -189,6 +188,50 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack, 
     } catch (err: any) {
       setNotification({ type: 'error', message: `Lỗi khi lưu: ${err.message}` });
       setIsSaving(false);
+    }
+  };
+
+  const handleGenerateInitialReport = async () => {
+    try {
+      setIsSaving(true);
+      const rep = await api.generateInitialReport(caseId, 'BS. Trần Demo (CLINICIAN_DEMO)');
+      setReports((prev) => [...prev, rep]);
+      setCurrentReport(rep);
+      setNotification({ type: 'success', message: 'Đã khởi tạo bản thảo báo cáo sơ bộ V1 thành công!' });
+      const logs = await api.getAuditLogs(caseId);
+      setAuditLogs(logs);
+      const detail = await api.getCaseDetail(caseId);
+      setCaseDetail(detail);
+    } catch (err: any) {
+      setNotification({ type: 'error', message: `Lỗi khởi tạo báo cáo: ${err.message}` });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAttachSampleData = async () => {
+    try {
+      setIsProcessing(true);
+      await api.attachSampleData(caseId);
+      setNotification({ type: 'success', message: 'Đã gắn tệp mẫu và hoàn tất phân tích AI cho ca này!' });
+      await loadCaseData();
+    } catch (err: any) {
+      setNotification({ type: 'error', message: `Lỗi nạp dữ liệu mẫu: ${err.message}` });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUploadImageDirect = async (file: File) => {
+    try {
+      setIsUploading(true);
+      await api.uploadCaseFile(caseId, file, 'image', uploadViewPos, 'Bác sĩ lâm sàng');
+      setNotification({ type: 'success', message: `Đã tải ảnh ${file.name} thành công!` });
+      await loadCaseData();
+    } catch (err: any) {
+      setNotification({ type: 'error', message: err.message || 'Lỗi tải ảnh' });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -371,6 +414,30 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack, 
               </div>
             )}
 
+            {(!caseDetail.has_image || !caseDetail.has_document || caseDetail.report_versions_count === 0) && (
+              <button
+                onClick={handleAttachSampleData}
+                disabled={isProcessing}
+                className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold border border-emerald-200 flex items-center gap-1.5 transition-colors shadow-xs"
+                title="Gắn tài liệu PDF 2 trang và ảnh X-quang mẫu PA, tự động phân tích"
+              >
+                <Play className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{isProcessing ? 'Đang xử lý...' : 'Nạp dữ liệu mẫu & Phân tích'}</span>
+              </button>
+            )}
+
+            {caseDetail.report_versions_count === 0 && (
+              <button
+                onClick={handleGenerateInitialReport}
+                disabled={isSaving}
+                className="px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-semibold border border-sky-200 flex items-center gap-1.5 transition-colors shadow-xs"
+                title="Tự động tạo bản thảo báo cáo sơ bộ V1"
+              >
+                <Plus className="w-3.5 h-3.5 text-sky-600" />
+                <span>{isSaving ? 'Đang tạo...' : '+ Khởi tạo Báo Cáo V1'}</span>
+              </button>
+            )}
+
             {currentReport && (
               <a
                 href={`/api/cases/${caseId}/reports/${currentReport.id}/export?format=pdf`}
@@ -495,6 +562,9 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack, 
                     extraction={extraction}
                     selectedFieldKey={selectedFieldKey}
                     onSelectField={handleSelectField}
+                    onRunAiProcess={handleRunProcessing}
+                    onAttachSampleData={handleAttachSampleData}
+                    isProcessing={isProcessing}
                   />
                 </div>
               </div>
@@ -509,6 +579,10 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack, 
               caseId={caseId}
               prediction={prediction}
               error={predictionError}
+              onRunAiProcess={handleRunProcessing}
+              onAttachSampleData={handleAttachSampleData}
+              onUploadImage={handleUploadImageDirect}
+              isProcessing={isProcessing}
             />
           </div>
         )}
@@ -521,6 +595,7 @@ export const CaseDetailPage: React.FC<CaseDetailPageProps> = ({ caseId, onBack, 
               currentReport={currentReport}
               onSaveEdit={handleSaveEdit}
               onApprove={handleApprove}
+              onGenerateInitial={handleGenerateInitialReport}
               isSaving={isSaving}
             />
           </div>

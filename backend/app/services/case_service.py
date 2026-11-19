@@ -473,20 +473,23 @@ class CaseService:
 
         # Generate initial AI Draft (Version 1) if none exists
         existing_report = db.query(ReportVersionModel).filter(ReportVersionModel.case_id == case_id).first()
-        if not existing_report and extraction_result:
+        if not existing_report:
             rep_id = f"REP-{case_id}-V1"
-            f_data = extraction_result.get("fields", {})
+            f_data = extraction_result.get("fields", {}) if extraction_result else {}
 
-            symptoms_str = ", ".join(f_data.get("symptoms", {}).get("value", [])) if isinstance(f_data.get("symptoms", {}).get("value"), list) else str(f_data.get("symptoms", {}).get("value") or "Không có")
-            history_str = ", ".join(f_data.get("medical_history", {}).get("value", [])) if isinstance(f_data.get("medical_history", {}).get("value"), list) else str(f_data.get("medical_history", {}).get("value") or "Không có")
-            meds_str = ", ".join(f_data.get("medications", {}).get("value", [])) if isinstance(f_data.get("medications", {}).get("value"), list) else str(f_data.get("medications", {}).get("value") or "Không có")
+            symptoms_val = f_data.get("symptoms", {}).get("value")
+            symptoms_str = ", ".join(symptoms_val) if isinstance(symptoms_val, list) else str(symptoms_val or "Chưa có thông tin triệu chứng")
+            history_val = f_data.get("medical_history", {}).get("value")
+            history_str = ", ".join(history_val) if isinstance(history_val, list) else str(history_val or "Chưa có tiền sử ghi nhận")
+            meds_val = f_data.get("medications", {}).get("value")
+            meds_str = ", ".join(meds_val) if isinstance(meds_val, list) else str(meds_val or "Chưa có thuốc đang dùng")
 
             summary_text = f"Bệnh nhân {case.patient_name_demo} ({case.age or 'N/A'} tuổi, {case.gender or 'N/A'}). Triệu chứng: {symptoms_str}. Tiền sử: {history_str}. Đang dùng: {meds_str}."
 
             xray_obs = "Kết quả phân tích hình ảnh X-quang ngực (MOCK):\n"
             if prediction_result and prediction_result.get("labels"):
                 for l in prediction_result["labels"]:
-                    xray_obs += f"- {l.get('name_vi')}: {l.get('score')} ({'Nghi ngờ' if l.get('is_suspected') else 'Bình thường'})\n"
+                    xray_obs += f"- {l.get('name_vi', l.get('code'))}: {l.get('score')} ({'Nghi ngờ' if l.get('is_suspected') else 'Bình thường'})\n"
             else:
                 xray_obs += "Chưa có kết quả phân tích X-quang hoặc ảnh tải lên chưa có mô hình hỗ trợ."
 
@@ -680,3 +683,87 @@ class CaseService:
         db.commit()
         db.refresh(pred)
         return pred
+
+    @staticmethod
+    def attach_sample_data(db: Session, case_id: str) -> Dict[str, Any]:
+        case = db.query(CaseModel).filter(CaseModel.id == case_id).first()
+        if not case:
+            raise HTTPException(status_code=404, detail=f"Không tìm thấy ca bệnh: {case_id}")
+
+        demo_assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "demo_assets"))
+        sample_doc = os.path.join(demo_assets_dir, "sample_case_2pages.pdf")
+        sample_img = os.path.join(demo_assets_dir, "xray_illustration.png")
+
+        case_dir = os.path.join(STORAGE_ROOT, "cases", case_id)
+        os.makedirs(case_dir, exist_ok=True)
+
+        import shutil
+        if os.path.exists(sample_doc):
+            dest_doc = os.path.join(case_dir, f"{uuid.uuid4().hex[:8]}_sample_doc.pdf")
+            shutil.copy2(sample_doc, dest_doc)
+            cf_doc = CaseFileModel(
+                id=f"FILE-{case_id}-DOC-{uuid.uuid4().hex[:6]}",
+                case_id=case_id,
+                kind="document",
+                original_filename="sample_case_2pages.pdf",
+                storage_path=dest_doc,
+                mime_type="application/pdf",
+                size_bytes=os.path.getsize(dest_doc),
+                sha256_hash=get_file_sha256(dest_doc),
+                view_position="PA",
+                page_count=2,
+                uploaded_by="Hệ thống (Dữ liệu mẫu)",
+                created_at=datetime.datetime.now(datetime.timezone.utc)
+            )
+            db.add(cf_doc)
+
+            doc_model = db.query(DocumentModel).filter(DocumentModel.case_id == case_id).first()
+            if not doc_model:
+                doc_model = DocumentModel(
+                    id=f"DOC-{case_id}-{uuid.uuid4().hex[:4]}",
+                    case_id=case_id,
+                    filename="sample_case_2pages.pdf",
+                    file_path=dest_doc,
+                    page_count=2,
+                    status="OK"
+                )
+                db.add(doc_model)
+
+        if os.path.exists(sample_img):
+            dest_img = os.path.join(case_dir, f"{uuid.uuid4().hex[:8]}_sample_xray.png")
+            shutil.copy2(sample_img, dest_img)
+            cf_img = CaseFileModel(
+                id=f"FILE-{case_id}-IMG-{uuid.uuid4().hex[:6]}",
+                case_id=case_id,
+                kind="image",
+                original_filename="xray_illustration.png",
+                storage_path=dest_img,
+                mime_type="image/png",
+                size_bytes=os.path.getsize(dest_img),
+                sha256_hash=get_file_sha256(dest_img),
+                view_position="PA",
+                page_count=1,
+                uploaded_by="Hệ thống (Dữ liệu mẫu)",
+                created_at=datetime.datetime.now(datetime.timezone.utc)
+            )
+            db.add(cf_img)
+
+            img_model = db.query(ImageModel).filter(ImageModel.case_id == case_id).first()
+            if not img_model:
+                img_model = ImageModel(
+                    id=f"IMG-{case_id}-{uuid.uuid4().hex[:4]}",
+                    case_id=case_id,
+                    filename="xray_illustration.png",
+                    file_path=dest_img,
+                    image_source_type="illustrative",
+                    paired_with_document=False,
+                    status="OK"
+                )
+                db.add(img_model)
+
+        case.status = "FILES_UPLOADED"
+        db.commit()
+
+        # Run processing automatically to produce extraction + predictions + report V1
+        res = CaseService.process_case(db, case_id, ProcessCaseRequest(view_position="PA"))
+        return res

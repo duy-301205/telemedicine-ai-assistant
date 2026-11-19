@@ -178,6 +178,10 @@ def get_case_image(case_id: str, db: Session = Depends(get_db)):
 def process_case(case_id: str, payload: ProcessCaseRequest = ProcessCaseRequest(), db: Session = Depends(get_db)):
     return CaseService.process_case(db, case_id, payload)
 
+@router.post("/cases/{case_id}/attach-sample-data", summary="Attach sample 2-page PDF and sample X-ray if missing, and run analysis")
+def attach_sample_data(case_id: str, db: Session = Depends(get_db)):
+    return CaseService.attach_sample_data(db, case_id)
+
 @router.get("/cases/{case_id}/extraction", response_model=ExtractionResponse, summary="Get extraction fields with sources")
 def get_case_extraction(case_id: str, db: Session = Depends(get_db)):
     return CaseService.get_extraction(db, case_id)
@@ -223,6 +227,14 @@ def get_case_report_version(case_id: str, version_id: str, db: Session = Depends
 @router.post("/cases/{case_id}/reports/draft-edit", response_model=ReportVersionResponse, summary="Save doctor edited draft version")
 def save_draft_edit(case_id: str, payload: ReportDraftEditRequest, db: Session = Depends(get_db)):
     return ReportService.create_draft_edit(db, case_id, payload)
+
+@router.post("/cases/{case_id}/reports/generate-initial", response_model=ReportVersionResponse, summary="Generate initial AI draft report version (V1)")
+def generate_initial_report(
+    case_id: str,
+    actor_label: str = Query("AI Assistant (Prototype)", description="Label of generating actor"),
+    db: Session = Depends(get_db)
+):
+    return ReportService.generate_initial_report(db, case_id, actor_label)
 
 @router.post("/cases/{case_id}/reports/{version_id}/approve", response_model=ReportVersionResponse, summary="Approve report version")
 def approve_report(case_id: str, version_id: str, payload: ReportApproveRequest, db: Session = Depends(get_db)):

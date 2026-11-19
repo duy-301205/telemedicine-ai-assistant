@@ -8,7 +8,8 @@ import {
   AlertCircle, 
   FileSearch, 
   CheckCircle,
-  ExternalLink 
+  ExternalLink,
+  Sparkles 
 } from 'lucide-react';
 import { ExtractionData, SourceCitation } from '../types';
 
@@ -16,19 +17,53 @@ interface ExtractionPanelProps {
   extraction: ExtractionData | null;
   selectedFieldKey: string | null;
   onSelectField: (fieldKey: string, source: SourceCitation | null, page: number) => void;
+  onRunAiProcess?: () => Promise<void>;
+  onAttachSampleData?: () => Promise<void>;
+  isProcessing?: boolean;
 }
 
 export const ExtractionPanel: React.FC<ExtractionPanelProps> = ({
   extraction,
   selectedFieldKey,
   onSelectField,
+  onRunAiProcess,
+  onAttachSampleData,
+  isProcessing = false
 }) => {
   if (!extraction || !extraction.fields) {
     return (
       <div className="p-8 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col items-center justify-center text-center h-full">
-        <FileSearch className="w-10 h-10 text-slate-300 mb-2 animate-pulse" />
-        <h4 className="font-bold text-slate-700 text-sm">Đang tải dữ liệu trích xuất hồ sơ...</h4>
-        <p className="text-xs text-slate-400 mt-1">Đang phân tích và truy vết dẫn nguồn từ tệp PDF</p>
+        <div className="w-14 h-14 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center mb-3 text-sky-600">
+          <FileSearch className="w-7 h-7" />
+        </div>
+        <h4 className="font-bold text-slate-800 text-sm mb-1">Chưa có dữ liệu trích xuất hồ sơ</h4>
+        <p className="text-xs text-slate-500 max-w-sm mb-5 leading-relaxed">
+          Ca bệnh chưa chạy trích xuất thông tin lâm sàng từ tệp PDF. Bạn có thể kích hoạt trích xuất AI hoặc gắn bộ hồ sơ mẫu chuẩn 2 trang.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center gap-2.5">
+          {onRunAiProcess && (
+            <button
+              onClick={onRunAiProcess}
+              disabled={isProcessing}
+              className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>{isProcessing ? 'Đang trích xuất...' : '⚡ Chạy AI Trích xuất hồ sơ'}</span>
+            </button>
+          )}
+
+          {onAttachSampleData && (
+            <button
+              onClick={onAttachSampleData}
+              disabled={isProcessing}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>⚡ Gắn dữ liệu mẫu & Trích xuất</span>
+            </button>
+          )}
+        </div>
       </div>
     );
   }

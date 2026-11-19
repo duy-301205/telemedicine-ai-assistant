@@ -18,6 +18,7 @@ interface ReportEditorProps {
   currentReport: ReportVersion | null;
   onSaveEdit: (content: ReportContent, actorLabel: string, changeSummary: string) => Promise<void>;
   onApprove: (actorLabel: string, notes: string) => Promise<void>;
+  onGenerateInitial?: () => Promise<void>;
   isSaving: boolean;
 }
 
@@ -26,6 +27,7 @@ export const ReportEditor: React.FC<ReportEditorProps> = ({
   currentReport,
   onSaveEdit,
   onApprove,
+  onGenerateInitial,
   isSaving,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -54,11 +56,149 @@ export const ReportEditor: React.FC<ReportEditorProps> = ({
     }
   }, [currentReport]);
 
+  const handleSaveInitial = async () => {
+    const attentionPoints = attentionPointsText
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const updatedContent: ReportContent = {
+      summary: summary.trim() || 'Bản thảo ban đầu ca bệnh.',
+      clinical_notes: clinicalNotes.trim() || 'Chưa ghi nhận bệnh sử chi tiết.',
+      xray_observations: xrayObservations.trim() || 'Chưa có nhận định hình ảnh.',
+      attention_points: attentionPoints,
+      recommended_action: recommendedAction.trim() || 'Hội chẩn chuyên khoa theo lịch.',
+      source_references: [],
+    };
+
+    await onSaveEdit(
+      updatedContent,
+      actorLabel.trim() || 'Bác sĩ Demo',
+      'Khởi tạo bản thảo báo cáo đầu tiên (V1)'
+    );
+  };
+
   if (!currentReport) {
     return (
-      <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-xs">
-        <div className="animate-spin w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full mx-auto mb-3"></div>
-        <p className="text-sm text-slate-600">Đang tải bản thảo báo cáo...</p>
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-600">
+              <FileText className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">Bản Thảo Báo Cáo Sơ Bộ (Chưa khởi tạo)</h3>
+              <p className="text-xs text-slate-500">Ca bệnh chưa có bản thảo báo cáo sơ bộ. Bác sĩ có thể tự soạn hoặc để AI tạo bản thảo tự động.</p>
+            </div>
+          </div>
+
+          {onGenerateInitial && (
+            <button
+              onClick={onGenerateInitial}
+              disabled={isSaving}
+              className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-colors shrink-0"
+            >
+              <FileText className="w-4 h-4" />
+              <span>{isSaving ? 'Đang tạo...' : '⚡ Tự động tạo Bản thảo Sơ bộ (AI Draft V1)'}</span>
+            </button>
+          )}
+        </div>
+
+        {/* Doctor direct draft form */}
+        <div className="space-y-4">
+          <h4 className="font-bold text-xs uppercase text-slate-600 tracking-wider">
+            Hoặc tự khởi tạo báo cáo trực tiếp (Bác sĩ nhập thủ công):
+          </h4>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Người soạn thảo / Bác sĩ lâm sàng:
+            </label>
+            <input
+              type="text"
+              value={actorLabel}
+              onChange={(e) => setActorLabel(e.target.value)}
+              className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              placeholder="VD: TS.BS. Trần Hội Chẩn"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              1. Tóm tắt ca bệnh (Summary):
+            </label>
+            <textarea
+              rows={2}
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              placeholder="Tóm tắt ngắn gọn tình trạng bệnh nhân, tuổi, giới, lý do hội chẩn..."
+              className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 leading-relaxed"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              2. Nhận định lâm sàng (Clinical Notes):
+            </label>
+            <textarea
+              rows={3}
+              value={clinicalNotes}
+              onChange={(e) => setClinicalNotes(e.target.value)}
+              placeholder="Triệu chứng chính, diễn tiến bệnh, thuốc đang điều trị..."
+              className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 leading-relaxed"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              3. Nhận định hình ảnh X-quang (X-ray Observations):
+            </label>
+            <textarea
+              rows={2}
+              value={xrayObservations}
+              onChange={(e) => setXrayObservations(e.target.value)}
+              placeholder="Mô tả tổn thương ghi nhận trên phim X-quang ngực..."
+              className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 leading-relaxed"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              4. Điểm cần lưu ý (Attention Points - mỗi dòng một điểm):
+            </label>
+            <textarea
+              rows={2}
+              value={attentionPointsText}
+              onChange={(e) => setAttentionPointsText(e.target.value)}
+              placeholder="Dị ứng thuốc&#10;Tương tác thuốc&#10;Cận lâm sàng bổ sung cần làm"
+              className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 leading-relaxed font-mono"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              5. Đề xuất hành động / Kế hoạch xử trí (Recommended Action):
+            </label>
+            <textarea
+              rows={2}
+              value={recommendedAction}
+              onChange={(e) => setRecommendedAction(e.target.value)}
+              placeholder="Đề xuất hội chẩn chuyên khoa, hướng điều trị và theo dõi..."
+              className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 leading-relaxed"
+            />
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <button
+              onClick={handleSaveInitial}
+              disabled={isSaving || !summary.trim() || !clinicalNotes.trim()}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              <span>{isSaving ? 'Đang lưu...' : 'Lưu Bản Thảo Báo Cáo V1'}</span>
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

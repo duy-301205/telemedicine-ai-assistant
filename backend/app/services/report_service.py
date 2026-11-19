@@ -3,7 +3,7 @@ import datetime
 from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from backend.app.models.models import CaseModel, ReportVersionModel, AuditLogModel
+from backend.app.models.models import CaseModel, ReportVersionModel, AuditLogModel, ExtractionModel, PredictionModel
 from backend.app.schemas.schemas import ReportDraftEditRequest, ReportApproveRequest
 
 class ReportService:
@@ -37,15 +37,25 @@ class ReportService:
             raise HTTPException(status_code=404, detail=f"Không tìm thấy ca bệnh: {case_id}")
 
         # 2. Validate parent version exists and belongs to case
-        parent = db.query(ReportVersionModel).filter(
-            ReportVersionModel.id == payload.parent_version_id,
-            ReportVersionModel.case_id == case_id
-        ).first()
-        if not parent:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Phiên bản gốc '{payload.parent_version_id}' không hợp lệ hoặc không thuộc ca '{case_id}'"
-            )
+        parent = None
+        if payload.parent_version_id and payload.parent_version_id not in ["INITIAL", "NEW", "NONE", ""]:
+            parent = db.query(ReportVersionModel).filter(
+                ReportVersionModel.id == payload.parent_version_id,
+                ReportVersionModel.case_id == case_id
+            ).first()
+            if not parent:
+                # If specific ID was provided but not found, fallback to latest existing version if available
+                latest_existing = db.query(ReportVersionModel).filter(
+                    ReportVersionModel.case_id == case_id
+                ).order_by(ReportVersionModel.version_number.desc()).first()
+                if latest_existing:
+                    parent = latest_existing
+                else:
+                    parent = None
+        else:
+            parent = db.query(ReportVersionModel).filter(
+                ReportVersionModel.case_id == case_id
+            ).order_by(ReportVersionModel.version_number.desc()).first()
 
         # 3. Validate content is not empty
         if not payload.content.summary or not payload.content.clinical_notes:
@@ -63,7 +73,7 @@ class ReportService:
             case_id=case_id,
             version_number=next_ver_num,
             status="DOCTOR_EDITED",
-            parent_version_id=parent.id,
+            parent_version_id=parent.id if parent else None,
             actor_label=payload.actor_label,
             actor_role="demo_doctor",
             content=payload.content.model_dump(),
@@ -78,10 +88,10 @@ class ReportService:
             case_id=case_id,
             version_id=new_version_id,
             actor_label=payload.actor_label,
-            action="SAVED_DOCTOR_EDIT",
-            source_version_id=parent.id,
+            action="SAVED_DOCTOR_EDIT" if parent else "CREATED_INITIAL_DRAFT",
+            source_version_id=parent.id if parent else None,
             timestamp_utc=datetime.datetime.now(datetime.timezone.utc),
-            change_summary=payload.change_summary or "Chỉnh sửa bởi Bác sĩ Demo"
+            change_summary=payload.change_summary or ("Chỉnh sửa bởi Bác sĩ Demo" if parent else "Khởi tạo bản thảo báo cáo đầu tiên")
         )
         db.add(audit)
 
@@ -252,3 +262,140 @@ class ReportService:
         }
 
         return generate_report_pdf_bytes(report_data, case_data)
+
+    @staticmethod
+    def generate_initial_report(db: Session, case_id: str, actor_label: str = "AI Assistant (Prototype)") -> ReportVersionModel:
+        case = db.query(CaseModel).filter(CaseModel.id == case_id).first()
+        if not case:
+            raise HTTPException(status_code=404, detail=f"Không tìm thấy ca bệnh: {case_id}")
+
+        # Check existing extraction and prediction
+        ext = db.query(ExtractionModel).filter(ExtractionModel.case_id == case_id).first()
+        pred = db.query(PredictionModel).filter(PredictionModel.case_id == case_id).first()
+
+        age_str = f", {case.age} tuổi" if case.age else ""
+        gender_str = f", giới tính {case.gender}" if case.gender else ""
+        summary_text = f"Bệnh nhân giả lập: {case.patient_name_demo}{age_str}{gender_str}."
+
+        symptoms_list = []
+        history_list = []
+        meds_list = []
+        missing_notes = []
+
+        if ext and ext.fields_data:
+            fields = ext.fields_data
+            sym_data = fields.get("symptoms", {})
+            if sym_data.get("value"):
+                val = sym_data["value"]
+                symptoms_list = val if isinstance(val, list) else [str(val)]
+
+            hist_data = fields.get("medical_history", {})
+            if hist_data.get("value"):
+                val = hist_data["value"]
+                history_list = val if isinstance(val, list) else [str(val)]
+
+            med_data = fields.get("medications", {})
+            if med_data.get("value"):
+                val = med_data["value"]
+                meds_list = val if isinstance(val, list) else [str(val)]
+
+            allergy_data = fields.get("allergies", {})
+            if allergy_data.get("status") == "missing":
+                missing_notes.append("Thiếu thông tin dị ứng trong hồ sơ trích xuất.")
+            elif allergy_data.get("value"):
+                val = allergy_data["value"]
+                missing_notes.append(f"Dị ứng: {', '.join(val) if isinstance(val, list) else val}")
+
+        if not symptoms_list:
+            symptoms_list = ["Bệnh nhân theo dõi khám hô hấp - tim mạch."]
+        if not history_list:
+            history_list = ["Chưa ghi nhận tiền sử bệnh nền đặc biệt."]
+        if not meds_list:
+            meds_list = ["Không dùng thuốc điều trị mạn tính kéo dài."]
+
+        clinical_notes_text = (
+            f"Triệu chứng: {', '.join(symptoms_list)}.\n"
+            f"Tiền sử: {', '.join(history_list)}.\n"
+            f"Thuốc đang dùng: {', '.join(meds_list)}."
+        )
+
+        xray_obs = []
+        high_risk_labels = []
+        if pred and pred.labels:
+            for lbl in pred.labels:
+                score = lbl.get("score", 0.0)
+                thresh = lbl.get("threshold_mock", 0.5)
+                name_vi = lbl.get("name_vi", lbl.get("code", "Tổn thương"))
+                desc = lbl.get("finding_description", "")
+                if score >= thresh:
+                    high_risk_labels.append(f"{name_vi} ({score:.2f})")
+                    xray_obs.append(f"- {name_vi} (Xác suất mô phỏng {score:.2f} >= ngưỡng {thresh:.2f}): {desc}")
+                else:
+                    xray_obs.append(f"- {name_vi} (Xác suất {score:.2f} < ngưỡng {thresh:.2f}): Chưa ghi nhận bất thường.")
+        else:
+            xray_obs.append("Chưa thực hiện phân tích X-quang hoặc chưa có ảnh đối chiếu.")
+
+        xray_text = "\n".join(xray_obs)
+
+        attention_points = []
+        if case.error_type == "MISSING_PAGE":
+            attention_points.append("Cảnh báo: Hồ sơ thiếu trang kết quả cận lâm sàng; cần bổ sung.")
+        if case.error_type == "AP_VIEW_WARNING":
+            attention_points.append("Cảnh báo tư thế chụp AP: bóng tim có thể bị phóng đại giả lập.")
+        if missing_notes:
+            attention_points.extend(missing_notes)
+        if high_risk_labels:
+            attention_points.append(f"Điểm số AI vượt ngưỡng nghi ngờ: {', '.join(high_risk_labels)}.")
+        if not attention_points:
+            attention_points.append("Cần đối chiếu thêm với lâm sàng trực tiếp khi tiến hành hội chẩn.")
+
+        recommended_action = "Chuyển tiếp hồ sơ chuẩn bị cho buổi hội chẩn từ xa; kiểm tra lại cận lâm sàng và tiền sử dị ứng với người bệnh."
+
+        latest_ver = db.query(ReportVersionModel).filter(
+            ReportVersionModel.case_id == case_id
+        ).order_by(ReportVersionModel.version_number.desc()).first()
+        next_ver_num = (latest_ver.version_number + 1) if latest_ver else 1
+
+        new_version_id = f"REP-{case_id}-V{next_ver_num}-{uuid.uuid4().hex[:6]}"
+        content_dict = {
+            "summary": summary_text,
+            "clinical_notes": clinical_notes_text,
+            "xray_observations": xray_text,
+            "attention_points": attention_points,
+            "recommended_action": recommended_action,
+            "source_references": [
+                {"field": "symptoms", "source": "Hồ sơ bệnh án gốc"},
+                {"field": "xray", "source": "Phân tích hình ảnh X-quang"}
+            ]
+        }
+
+        report = ReportVersionModel(
+            id=new_version_id,
+            case_id=case_id,
+            version_number=next_ver_num,
+            status="AI_DRAFT",
+            parent_version_id=latest_ver.id if latest_ver else None,
+            actor_label=actor_label,
+            actor_role="ai_pipeline",
+            content=content_dict,
+            change_summary="Tự động tổng hợp bản thảo báo cáo sơ bộ từ dữ liệu ca bệnh (AI Draft V1)",
+            created_at=datetime.datetime.now(datetime.timezone.utc)
+        )
+        db.add(report)
+
+        audit = AuditLogModel(
+            id=f"AUD-{uuid.uuid4().hex[:8]}",
+            case_id=case_id,
+            version_id=new_version_id,
+            actor_label=actor_label,
+            action="GENERATED_INITIAL_DRAFT",
+            source_version_id=latest_ver.id if latest_ver else None,
+            timestamp_utc=datetime.datetime.now(datetime.timezone.utc),
+            change_summary="Tự động tổng hợp bản thảo báo cáo sơ bộ từ dữ liệu ca bệnh (AI Draft V1)"
+        )
+        db.add(audit)
+
+        case.status = "AI_DRAFT"
+        db.commit()
+        db.refresh(report)
+        return report
