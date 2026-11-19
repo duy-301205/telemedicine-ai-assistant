@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { DisclaimerBanner } from './components/DisclaimerBanner';
+import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { DashboardPage } from './pages/DashboardPage';
 import { CaseListPage } from './pages/CaseListPage';
 import { CaseDetailPage } from './pages/CaseDetailPage';
 import { CaseCreatePage } from './pages/CaseCreatePage';
 import { ConsultationsPage } from './pages/ConsultationsPage';
-import { ResearchDataPage } from './pages/ResearchDataPage';
-import { TestPlanPage } from './pages/TestPlanPage';
 import { AboutPage } from './pages/AboutPage';
 import { DemoConfig } from './types';
 import { api } from './api/client';
@@ -16,6 +15,10 @@ export const App: React.FC = () => {
   const [currentRoute, setCurrentRoute] = useState<string>('/');
   const [demoConfig, setDemoConfig] = useState<DemoConfig | null>(null);
   const [currentRole, setCurrentRole] = useState<string>('CLINICIAN_DEMO');
+  
+  // Sidebar state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState<boolean>(false);
 
   useEffect(() => {
     api.getDemoConfig()
@@ -27,6 +30,7 @@ export const App: React.FC = () => {
 
   const handleNavigate = (route: string) => {
     setCurrentRoute(route);
+    setIsMobileSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -69,12 +73,6 @@ export const App: React.FC = () => {
         />
       );
     }
-    if (currentRoute === '/research-data' || currentRoute === '/research') {
-      return <ResearchDataPage />;
-    }
-    if (currentRoute === '/test-plan') {
-      return <TestPlanPage />;
-    }
     if (currentRoute === '/about') {
       return <AboutPage />;
     }
@@ -86,47 +84,57 @@ export const App: React.FC = () => {
       {/* 1. Global Persistent Medical Disclaimer Banner */}
       <DisclaimerBanner />
 
-      {/* 2. Global Navigation Bar with Role Switcher */}
-      <Navbar
-        config={demoConfig}
-        activeTab={currentRoute}
-        onNavigate={handleNavigate}
-        currentRole={currentRole}
-        onRoleChange={setCurrentRole}
-      />
+      {/* 2. Main Flex Container: Left Collapsible Sidebar + Right Workstation */}
+      <div className="flex flex-1 min-h-[calc(100vh-40px)]">
+        {/* Left Sidebar (Toggleable & Collapsible) */}
+        <Sidebar
+          isOpen={isMobileSidebarOpen}
+          isCollapsed={isDesktopSidebarCollapsed}
+          onToggleCollapse={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          activeTab={currentRoute}
+          onNavigate={handleNavigate}
+          currentRole={currentRole}
+          onRoleChange={setCurrentRole}
+        />
 
-      {/* 3. Main Route Container (Wide desktop layout max-w-[1760px]) */}
-      <main className="flex-1 w-full max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        {renderContent()}
-      </main>
+        {/* Right Workstation: Header Navbar + Dynamic Page Content + Footer */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <Navbar
+            config={demoConfig}
+            activeTab={currentRoute}
+            onNavigate={handleNavigate}
+            currentRole={currentRole}
+            onRoleChange={setCurrentRole}
+            onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
+            isSidebarCollapsed={isDesktopSidebarCollapsed}
+          />
 
-      {/* 4. Global Professional Footer */}
-      <footer className="bg-white border-t border-slate-200/90 py-6 mt-auto">
-        <div className="w-full max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
-          <div>
-            <p className="font-semibold text-slate-700">
-              Telemedicine AI Assistant — Hệ thống Quản lý Ca bệnh & Chuẩn bị Hội chẩn Y tế từ xa
-            </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Hệ thống hoạt động với SQLite Database thật; Hai pipeline AI trích xuất thực thể và dự đoán VinDr-CXR chạy trên bộ Mock Adapters kỹ thuật theo quy chuẩn an toàn.
-            </p>
-          </div>
+          <main className="flex-1 w-full max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            {renderContent()}
+          </main>
 
-          <div className="flex items-center gap-4 font-medium text-slate-600 shrink-0">
-            <button onClick={() => handleNavigate('/research-data')} className="hover:text-sky-600 transition-colors">
-              VinDr-CXR Plan
-            </button>
-            <span>&bull;</span>
-            <button onClick={() => handleNavigate('/test-plan')} className="hover:text-sky-600 transition-colors">
-              Kiểm thử 30/30 TC
-            </button>
-            <span>&bull;</span>
-            <button onClick={() => handleNavigate('/about')} className="hover:text-sky-600 transition-colors">
-              Giới hạn hệ thống
-            </button>
-          </div>
+          <footer className="bg-white border-t border-slate-200/90 py-4 mt-auto">
+            <div className="w-full max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
+              <div>
+                <p className="font-semibold text-slate-700">
+                  Telemedicine AI Assistant — Hệ thống Quản lý Ca bệnh & Chuẩn bị Hội chẩn Y tế từ xa
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Phục vụ chuẩn bị hồ sơ lâm sàng, hình ảnh cận lâm sàng và tổ chức hội đồng hội chẩn trực tuyến.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 font-medium text-slate-500 shrink-0 text-[11px]">
+                <button onClick={() => handleNavigate('/about')} className="hover:text-sky-600 transition-colors">
+                  Giới hạn hệ thống & Tuyên bố kỹ thuật
+                </button>
+              </div>
+            </div>
+          </footer>
         </div>
-      </footer>
+      </div>
     </div>
   );
 };
