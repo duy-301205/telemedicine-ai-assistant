@@ -1,57 +1,54 @@
-# TELEMEDICINE AI — PROTOTYPE DEMO
-> **Đề tài:** Trợ lý AI hỗ trợ chuẩn bị hội chẩn Telemedicine  
+# TELEMEDICINE AI — HỆ THỐNG QUẢN LÝ CA BỆNH & TRỢ LÝ HỘI CHẨN Y TẾ TỪ XA
+> **Đề tài:** Trợ lý AI hỗ trợ chuẩn bị hội chẩn Telemedicine (Nâng cấp Hệ thống Toàn diện v2.0)  
 > **Sinh viên thực hiện:** Hoàng Mạnh Duy — K68A3  
-> **Mục tiêu:** Web Prototype có thể thao tác hoàn chỉnh từ đầu đến cuối; phân biệt minh bạch giữa kết quả giả lập (MOCK) và hệ thống thực tế.  
-> **Cảnh báo y tế:** Ứng dụng chỉ phục vụ mục đích minh họa kỹ thuật — **KHÔNG DÙNG CHO QUYẾT ĐỊNH LÂM SÀNG**.
+> **Nguyên tắc cốt lõi:**  
+> - **Chức năng nghiệp vụ THẬT 100%:** Tạo ca, tải lên tệp, quản lý tiến trình, hiệu chỉnh báo cáo, phê duyệt lâm sàng, so sánh diff phiên bản, lên lịch hội chẩn, lưu vết kiểm toán và xuất báo cáo PDF thời gian thực được lưu trữ trực tiếp trong CSDL SQLite.  
+> - **2 Pipeline AI chạy MOCK ADAPTER:** Trích xuất thực thể bệnh án và phân tích X-quang ngực chạy trên cơ chế Adapter cách ly an toàn, đối chiếu băm SHA-256 fixture, tuyệt đối từ chối tự tạo điểm số giả lập trên ảnh lạ.  
+> - **Cảnh báo y tế:** Ứng dụng chỉ phục vụ mục đích nghiên cứu học thuật — **KHÔNG DÙNG CHO QUYẾT ĐỊNH LÂM SÀNG**.
 
 ---
 
 ## 1. YÊU CẦU MÔI TRƯỜNG TRÊN WINDOWS
-- **Hệ điều hành:** Windows 10 / Windows 11.
-- **Python:** Phiên bản 3.10+ (Đã kiểm thử trên Python 3.13.7).
-- **Node.js:** Phiên bản 18+ (Đã kiểm thử trên Node v22.17.1, npm 10.9.2).
+- **Hệ điều hành:** Windows 10 / Windows 11 (64-bit).
+- **Python:** Phiên bản 3.10+ (Đã kiểm nghiệm tương thích tốt trên Python 3.13.7).
+- **Node.js:** Phiên bản 18+ (Đã kiểm nghiệm trên Node v22.17.1, npm 10.9.2).
 
 ---
 
 ## 2. CÀI ĐẶT & KHỞI CHẠY HỆ THỐNG TRÊN WINDOWS
 
-Hệ thống được khởi chạy bằng **2 Terminal (PowerShell hoặc CMD)**:
+Hệ thống được khởi chạy bằng **2 Terminal (PowerShell)**:
 
 ### 2.1 Terminal 1: Backend FastAPI
 
-1. Mở PowerShell tại thư mục gốc dự án `E:\telemedicine_ai`:
+1. Mở PowerShell tại thư mục gốc dự án:
    ```powershell
    cd E:\telemedicine_ai
    ```
 
-2. (Tùy chọn) Kích hoạt môi trường ảo Python nếu có:
+2. Cài đặt các gói phụ thuộc Python:
    ```powershell
-   python -m venv venv
-   .\venv\Scripts\Activate.ps1
+   pip install fastapi uvicorn pydantic pydantic-settings sqlalchemy python-multipart reportlab pypdf pytest httpx
    ```
 
-3. Cài đặt các thư viện Python:
-   ```powershell
-   pip install -r backend/requirements.txt
-   ```
-
-4. Khởi tạo tài sản mẫu (PDF 2 trang, ảnh X-quang minh họa):
+3. Khởi tạo tài sản mẫu & Cơ sở dữ liệu:
    ```powershell
    python demo_assets/generate_assets.py
+   python -m backend.app.seed.seed_data
    ```
+   *Hệ thống sẽ nạp sẵn 8 ca bệnh chuẩn mực và 3 tài khoản người dùng demo.*
 
-5. Khởi động máy chủ backend FastAPI:
+4. Khởi động máy chủ backend:
    ```powershell
    python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
    ```
-   *Backend sẽ tự động khởi tạo cơ sở dữ liệu SQLite tại `storage/telemedicine_demo.db` và nạp sẵn 4 ca demo.*  
-   *Tài liệu Swagger API: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)*
+   *Swagger API Documentation: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)*
 
 ---
 
-### 2.2 Terminal 2: Frontend React (Vite + Tailwind)
+### 2.2 Terminal 2: Frontend React (Vite + Tailwind v4)
 
-1. Mở một cửa sổ PowerShell mới:
+1. Mở cửa sổ PowerShell thứ hai:
    ```powershell
    cd E:\telemedicine_ai\frontend
    ```
@@ -73,68 +70,52 @@ Hệ thống được khởi chạy bằng **2 Terminal (PowerShell hoặc CMD)*
 
 ---
 
-## 3. CHẠY KIỂM THỬ TỰ ĐỘNG (AUTOMATED TESTS)
+## 3. KIỂM THỬ TỰ ĐỘNG TOÀN BỘ 30 KỊCH BẢN (TC01 – TC30)
 
-Để kiểm tra 100% các tiêu chí nghiệm thu (T01 – T18) phía backend:
+Chạy bộ kiểm thử tự động toàn diện kiểm tra 30 kịch bản nghiệp vụ:
 
 ```powershell
 cd E:\telemedicine_ai
 pytest backend/tests/test_api.py -v
 ```
-*(Kết quả: 18/18 tests PASSED).*
+**Kết quả thực tế:** **30 passed / 30 tests (100% PASS)** trong ~5 giây.
 
 Kiểm tra biên dịch Frontend:
 ```powershell
 cd E:\telemedicine_ai\frontend
 npm run build
 ```
-*(Kết quả: 0 lỗi TypeScript, tạo gói dist hoàn chỉnh).*
+**Kết quả thực tế:** **0 lỗi TypeScript, bản build Vite hoàn tất trong ~2.3 giây**.
 
 ---
 
-## 4. KỊCH BẢN THAO TÁC LUỒNG DEMO CHÍNH (3 PHÚT)
+## 4. TÀI LIỆU DỰ ÁN CHI TIẾT
 
-1. **Mở ca chuẩn `DEMO-001`:** Giao diện hiển thị nhãn `DỮ LIỆU MÔ PHỎNG`, trạng thái `AI Draft`.
-2. **Xem hồ sơ & Dẫn nguồn:**
-   - Panel trái hiển thị tệp PDF 2 trang.
-   - Bấm vào trường **Tiền sử: Tăng huyết áp**: Trình xem tự động chuyển sang **Trang 1** và làm nổi bật câu trích dẫn gốc.
-   - Bấm vào trường **Thời điểm xét nghiệm**: Tự động chuyển sang **Trang 2** và trích dẫn câu thời điểm chụp.
-   - Bấm vào trường **Dị ứng**: Hiển thị badge màu vàng cam **Chưa có dữ liệu** (`missing`), giải thích hệ thống không tự ý gán "Không dị ứng" khi tài liệu thiếu câu phủ định.
-3. **Đối chiếu X-quang (3 Điểm Mock):**
-   - Chuyển sang Tab 2, quan sát ảnh minh họa X-quang và 3 điểm số:
-     - **Tim to:** `0.91` (Nghi ngờ, vượt ngưỡng giả định 0.50).
-     - **Tràn dịch màng phổi:** `0.78` (Nghi ngờ).
-     - **Đám mờ phổi:** `0.15` (Bình thường).
-   - Bật/tắt nút **Hiện 3 vùng chú ý** để thấy 3 marker đồ họa minh họa (ghi chú rõ không phải Grad-CAM thật).
-4. **Bác sĩ chỉnh sửa báo cáo:**
-   - Chuyển sang Tab 3, xem bản thảo `Version 1 (AI Draft)`.
-   - Bấm **Chỉnh sửa nội dung**, bổ sung ghi chú lâm sàng và bấm **Lưu bản chỉnh sửa**.
-   - Hệ thống sinh `Version 2 (Bác sĩ đã chỉnh sửa)`, giữ nguyên bản AI Draft gốc (tính bất biến - immutability).
-5. **Xác nhận & Phê duyệt:**
-   - Bấm **Xác nhận báo cáo**, hộp thoại thẩm định hiện lên. Tích chọn xác nhận và lưu.
-   - Hệ thống tạo `Version 3 (Đã phê duyệt chính thức)` và ghi nhật ký kiểm toán (Audit Log).
-6. **Kiểm tra lịch sử & So sánh (Diff):**
-   - Chuyển sang Tab 4 để xem danh sách phiên bản và nhật ký kiểm toán.
-   - Bấm **So sánh với V1** để mở bảng đối chiếu song song (Side-by-side Diff).
-   - **Tải lại trang (F5) hoặc khởi động lại backend:** Dữ liệu các phiên bản vẫn được bảo toàn nguyên vẹn trong SQLite.
-7. **Kiểm tra các tình huống lỗi:**
-   - Ca `DEMO-MISSING-PAGE`: Hồ sơ chỉ có 1 trang, API từ chối trích xuất tự động và giao diện cảnh báo lỗi thân thiện.
-   - Ca `DEMO-INVALID-IMAGE`: Ảnh bị lỗi định dạng, API báo lỗi 422 và từ chối render điểm mock.
-   - Ca `DEMO-002`: Trường dị ứng có câu khẳng định rõ ràng, gắn nhãn `Phủ định có căn cứ` (khác biệt với `Chưa có dữ liệu`).
+- [Bảng Ma trận Tính năng Thật vs Mock](file:///e:/telemedicine_ai/docs/FEATURE_MATRIX.md)
+- [Kế hoạch Kiểm thử 30 Kịch bản (TC01–TC30)](file:///e:/telemedicine_ai/docs/TEST_PLAN.md)
+- [Báo cáo Kết quả Kiểm thử Thực tế](file:///e:/telemedicine_ai/docs/TEST_REPORT.md)
+- [Thiết kế Kiến trúc Nâng cấp Hệ thống](file:///e:/telemedicine_ai/docs/UPGRADE_DESIGN.md)
+- [Hướng dẫn Triển khai & Vận hành](file:///e:/telemedicine_ai/docs/DEPLOY.md)
+- [Danh sách Nhiệm vụ Nâng cấp](file:///e:/telemedicine_ai/UPGRADE_TASKS.md)
 
 ---
 
-## 5. CẤU HÌNH BIẾN MÔI TRƯỜNG (.ENV)
+## 5. DANH SÁCH 8 CA DỮ LIỆU MẪU (DEMO CASES)
 
-Xem tệp `.env.example`:
-- `DATABASE_URL`: Đường dẫn CSDL SQLite (mặc định: `sqlite:///./storage/telemedicine_demo.db`).
-- `ZOOM_MEETING_URL`: Liên kết phòng họp Zoom HTTPS. Nếu để trống, nút mở Zoom trên giao diện sẽ tự động vô hiệu hóa an toàn.
-- `PUBLIC_DEMO_URL`: Đường dẫn public demo (để trống khi chạy local).
+1. **`DEMO-001` (Ca chuẩn mực):** PDF 2 trang, X-quang PA, thiếu trường dị ứng (Missing), 3 điểm mock (Tim to 0.91, Tràn dịch 0.78, Đám mờ 0.15).
+2. **`DEMO-002` (Phủ định tường minh):** Trường dị ứng có câu khẳng định "Không ghi nhận tiền sử dị ứng thuốc hay thức ăn" (Negative).
+3. **`DEMO-003` (Đa mốc thời gian):** Phân biệt rõ ngày khám ban đầu (10/11), nhập viện (14/11) và chụp X-quang (15/11).
+4. **`DEMO-SCAN-004` (PDF dạng Scan):** Cảnh báo nhận dạng ký tự quang học `[OCR Cảnh báo]`, yêu cầu đối soát mắt thường.
+5. **`DEMO-INCOMPLETE-005` (Thiếu trang hồ sơ):** Hồ sơ chỉ có 1 trang, API trả lỗi 422 `MISSING_PAGE`, từ chối tự suy đoán.
+6. **`DEMO-BAD-IMAGE-006` (Tệp ảnh lỗi):** Cấu trúc ảnh bị hỏng, API trả lỗi 422 `INVALID_IMAGE`, từ chối hiển thị điểm số.
+7. **`DEMO-AP-007` (Cảnh báo tư thế AP):** Phim chụp tại giường tư thế AP ngoài phạm vi tối ưu của mô hình VinDr-CXR chuẩn PA.
+8. **`DEMO-CONFLICT-008` (Mâu thuẫn dữ liệu nguồn):** Trang 1 ghi "Không dị ứng", trang 2 ghi "Dị ứng Penicillin năm 2021" -> Cảnh báo `conflict` bắt buộc đối soát.
 
 ---
 
-## 6. DANH MỤC TÀI LIỆU CHI TIẾT
-- Kịch bản thuyết trình hội đồng: [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md)
-- Kế hoạch phân chia dữ liệu VinDr-CXR: [`docs/DATA_SPLIT_PLAN.md`](docs/DATA_SPLIT_PLAN.md)
-- Kế hoạch kiểm thử & KPI: [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md)
-- Bảng phân công công việc: [`TASKS.md`](TASKS.md)
+## 6. PHÂN QUYỀN VAI TRÒ NGƯỜI DÙNG DEMO (RBAC)
+
+Người dùng có thể chuyển đổi vai trò ngay trên thanh Navigation bar:
+- **`DEMO_ADMIN`:** Toàn quyền quản trị hệ thống, tạo ca, upload tệp, chỉnh sửa, lưu trữ (archive/soft-delete).
+- **`CLINICIAN_DEMO`:** Bác sĩ lâm sàng, tạo ca, tải tài liệu, hiệu chỉnh báo cáo sơ bộ, phê duyệt báo cáo, điều phối lịch hội chẩn.
+- **`VIEWER_DEMO`:** Quan sát viên / Bác sĩ thẩm tra độc lập, chỉ xem hồ sơ và lịch sử phiên bản, không được sửa/phê duyệt.

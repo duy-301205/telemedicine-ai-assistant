@@ -93,6 +93,11 @@ export const ReportEditor: React.FC<ReportEditorProps> = ({
     setShowApproveModal(false);
   };
 
+  const handleExportPdf = () => {
+    const url = `/api/cases/${caseId}/reports/${currentReport.id}/export?format=pdf`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   const handleExportJson = () => {
     const exportData = {
       export_metadata: {
@@ -207,13 +212,22 @@ export const ReportEditor: React.FC<ReportEditorProps> = ({
             </button>
           )}
 
+          {/* Export PDF Button */}
+          <button
+            onClick={handleExportPdf}
+            className="flex items-center gap-1 px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg text-xs font-semibold border border-sky-200 transition-colors shadow-xs"
+            title="Xuất báo cáo định dạng PDF chính thức"
+          >
+            <Download className="w-3.5 h-3.5 text-sky-600" /> Xuất PDF
+          </button>
+
           {/* Export JSON Button */}
           <button
             onClick={handleExportJson}
             className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-medium border border-slate-200 transition-colors"
             title="Xuất báo cáo định dạng JSON"
           >
-            <Download className="w-3.5 h-3.5" /> Xuất JSON
+            <Download className="w-3.5 h-3.5 text-slate-500" /> Xuất JSON
           </button>
         </div>
       </div>

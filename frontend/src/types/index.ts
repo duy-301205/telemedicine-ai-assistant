@@ -13,7 +13,7 @@ export interface SourceCitation {
 
 export interface FieldExtraction {
   value: string | string[] | null;
-  status: 'present' | 'missing' | 'negative';
+  status: 'present' | 'missing' | 'negative' | 'conflict' | 'unverified';
   source?: SourceCitation | null;
   note?: string | null;
 }
@@ -21,6 +21,9 @@ export interface FieldExtraction {
 export interface ExtractionData {
   case_id: string;
   mode: string;
+  is_mock?: boolean;
+  provider?: string;
+  fixture_id?: string | null;
   fields: {
     symptoms?: FieldExtraction;
     medical_history?: FieldExtraction;
@@ -29,6 +32,7 @@ export interface ExtractionData {
     test_datetime?: FieldExtraction;
     [key: string]: FieldExtraction | undefined;
   };
+  warnings?: string[];
 }
 
 export interface PredictionVisualBox {
@@ -55,12 +59,16 @@ export interface PredictionData {
   case_id: string;
   mode: string;
   is_mock: boolean;
+  status?: string;
+  error_type?: string | null;
   image_id?: string;
   image_source_type: string;
   paired_with_document: boolean;
   model_name: string;
+  view_position?: string;
   labels: PredictionLabel[];
   disclaimer: string;
+  warnings?: string[];
 }
 
 export interface ReportContent {
@@ -86,6 +94,7 @@ export interface ReportVersion {
   actor_role: string;
   content: ReportContent;
   change_summary?: string | null;
+  analysis_run_id?: string | null;
   created_at: string;
 }
 
@@ -100,8 +109,22 @@ export interface AuditLogItem {
   change_summary?: string | null;
 }
 
+export interface CaseFile {
+  id: string;
+  case_id: string;
+  kind: 'document' | 'image';
+  original_filename: string;
+  sha256_hash: string;
+  mime_type: string;
+  size_bytes: number;
+  page_count: number;
+  view_position: string;
+  created_at: string;
+}
+
 export interface CaseItem {
   id: string;
+  case_code?: string | null;
   patient_name_demo: string;
   age?: number | null;
   gender?: string | null;
@@ -110,7 +133,9 @@ export interface CaseItem {
   error_type?: string | null;
   error_message?: string | null;
   notes?: string | null;
+  created_by?: string | null;
   created_at: string;
+  archived_at?: string | null;
 }
 
 export interface CaseDetail extends CaseItem {
@@ -120,12 +145,55 @@ export interface CaseDetail extends CaseItem {
   report_versions_count: number;
 }
 
+export interface ConsultationItem {
+  id: string;
+  case_id: string;
+  report_version_id?: string | null;
+  title: string;
+  scheduled_at: string;
+  zoom_meeting_url?: string | null;
+  status: string;
+  conclusion_notes?: string | null;
+  created_by?: string | null;
+  created_at: string;
+}
+
+export interface DashboardSummary {
+  total_cases: number;
+  active_cases: number;
+  archived_cases: number;
+  status_counts: Record<string, number>;
+  total_files: number;
+  total_reports: number;
+  total_consultations: number;
+  recent_cases: Array<{
+    id: string;
+    case_code: string;
+    patient_name_demo: string;
+    status: string;
+    error_type?: string | null;
+    created_at: string;
+    has_notes: boolean;
+  }>;
+  system_mode: string;
+}
+
+export interface UserAccount {
+  id: string;
+  username: string;
+  full_name: string;
+  role: 'DEMO_ADMIN' | 'CLINICIAN_DEMO' | 'VIEWER_DEMO';
+  description: string;
+}
+
 export interface DemoConfig {
   demo_mode: boolean;
   disclaimer: string;
   zoom_meeting_url?: string | null;
   zoom_enabled: boolean;
   public_demo_url?: string | null;
+  max_upload_mb?: number;
+  max_pdf_pages?: number;
 }
 
 export interface DataPlanSplit {

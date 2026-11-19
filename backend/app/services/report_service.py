@@ -1,5 +1,6 @@
 import uuid
 import datetime
+from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from backend.app.models.models import CaseModel, ReportVersionModel, AuditLogModel
@@ -157,3 +158,97 @@ class ReportService:
         return db.query(AuditLogModel).filter(
             AuditLogModel.case_id == case_id
         ).order_by(AuditLogModel.timestamp_utc.asc()).all()
+
+    @staticmethod
+    def compare_reports(db: Session, case_id: str, v1_id: str, v2_id: str) -> Dict[str, Any]:
+        case = db.query(CaseModel).filter(CaseModel.id == case_id).first()
+        if not case:
+            raise HTTPException(status_code=404, detail=f"Không tìm thấy ca bệnh: {case_id}")
+
+        r1 = db.query(ReportVersionModel).filter(ReportVersionModel.id == v1_id, ReportVersionModel.case_id == case_id).first()
+        r2 = db.query(ReportVersionModel).filter(ReportVersionModel.id == v2_id, ReportVersionModel.case_id == case_id).first()
+
+        if not r1:
+            raise HTTPException(status_code=404, detail=f"Không tìm thấy phiên bản báo cáo {v1_id}")
+        if not r2:
+            raise HTTPException(status_code=404, detail=f"Không tìm thấy phiên bản báo cáo {v2_id}")
+
+        c1 = r1.content or {}
+        c2 = r2.content or {}
+
+        fields_to_compare = [
+            ("summary", "Tóm tắt ca bệnh"),
+            ("clinical_notes", "Nhận định lâm sàng"),
+            ("xray_observations", "Nhận định hình ảnh X-quang"),
+            ("attention_points", "Điểm cần lưu ý"),
+            ("recommended_action", "Hành động đề xuất")
+        ]
+
+        differences = []
+        for field_key, field_label in fields_to_compare:
+            val1 = c1.get(field_key)
+            val2 = c2.get(field_key)
+            is_changed = (val1 != val2)
+            differences.append({
+                "field": field_key,
+                "label": field_label,
+                "v1_value": val1,
+                "v2_value": val2,
+                "is_changed": is_changed
+            })
+
+        return {
+            "case_id": case_id,
+            "v1": {
+                "id": r1.id,
+                "version_number": r1.version_number,
+                "status": r1.status,
+                "actor_label": r1.actor_label,
+                "created_at": r1.created_at.isoformat() if r1.created_at else None
+            },
+            "v2": {
+                "id": r2.id,
+                "version_number": r2.version_number,
+                "status": r2.status,
+                "actor_label": r2.actor_label,
+                "created_at": r2.created_at.isoformat() if r2.created_at else None
+            },
+            "differences": differences
+        }
+
+    @staticmethod
+    def export_report_pdf(db: Session, case_id: str, version_id: str) -> bytes:
+        from backend.app.services.pdf_exporter import generate_report_pdf_bytes
+
+        case = db.query(CaseModel).filter(CaseModel.id == case_id).first()
+        if not case:
+            raise HTTPException(status_code=404, detail=f"Không tìm thấy ca bệnh: {case_id}")
+
+        report = db.query(ReportVersionModel).filter(
+            ReportVersionModel.id == version_id,
+            ReportVersionModel.case_id == case_id
+        ).first()
+        if not report:
+            raise HTTPException(status_code=404, detail=f"Không tìm thấy phiên bản {version_id}")
+
+        case_data = {
+            "id": case.id,
+            "case_code": case.case_code or case.id,
+            "patient_name_demo": case.patient_name_demo,
+            "age": case.age,
+            "gender": case.gender,
+            "notes": case.notes
+        }
+
+        report_data = {
+            "id": report.id,
+            "version_number": report.version_number,
+            "status": report.status,
+            "actor_label": report.actor_label,
+            "actor_role": report.actor_role,
+            "content": report.content,
+            "change_summary": report.change_summary,
+            "created_at": report.created_at
+        }
+
+        return generate_report_pdf_bytes(report_data, case_data)
